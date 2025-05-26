@@ -15,7 +15,7 @@ type Config struct {
 func Load() Config {
 	return Config{
 		HTTPAddr:     envDefault("HTTP_ADDR", ":8080"),
-		DSN:          envDefault("DATABASE_DSN", "postgres://user:pass@localhost:5432/linkedinify?sslmode=disable"),
+		DSN:          envDefault("DATABASE_DSN", "postgres:///linkedinify?sslmode=disable"),
 		JWTSecret:    []byte(envDefault("JWT_SECRET", "supersecret")),
 		OpenAIToken:  os.Getenv("OPENAI_TOKEN"),
 		TreblleToken: os.Getenv("TREBLLE_SDK_TOKEN"),

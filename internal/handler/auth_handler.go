@@ -3,6 +3,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -48,7 +49,8 @@ func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
 	}
 	token, err := h.svc.Register(r.Context(), c.Email, c.Password)
 	if err != nil {
-		http.Error(w, "conflict", http.StatusConflict)
+		log.Printf("Registration error: %v", err)
+		http.Error(w, "conflict: "+err.Error(), http.StatusConflict)
 		return
 	}
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
