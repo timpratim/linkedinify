@@ -14,12 +14,24 @@ import (
 
 func main() {
 	// Load environment variables
-	// Try multiple paths to find the .env file
-	err := godotenv.Load(".env", "../../.env", "/Users/pratimbhosale/Desktop/hobbyprojects/linkedinify/.env")
-	if err != nil {
-		log.Println("Warning: Error loading .env file:", err)
-	} else {
-		log.Println("✓ Successfully loaded .env file")
+	// Try to find the .env file using a generic approach
+	envPaths := []string{
+		".env",       // Current directory
+		"../../.env", // Two directories up (from cmd/api to project root)
+	}
+
+	// Try loading from each path until successful
+	var loaded bool
+	for _, path := range envPaths {
+		if err := godotenv.Load(path); err == nil {
+			log.Printf("✓ Successfully loaded .env file from %s", path)
+			loaded = true
+			break
+		}
+	}
+
+	if !loaded {
+		log.Println("⚠ Warning: Could not load .env file - using default configuration")
 	}
 	cfg := config.Load()
 
