@@ -27,7 +27,14 @@ func New(cfg config.Config) *chi.Mux {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Mount("/auth", authH.Routes())
-	r.Mount("/linkedinify", liH.Routes(cfg.JWTSecret))
+	
+	// Create API v1 router
+	v1Router := chi.NewRouter()
+	v1Router.Mount("/auth", authH.Routes())
+	v1Router.Mount("/linkedinify", liH.Routes(cfg.JWTSecret))
+	
+	// Mount v1 router under /api/v1
+	r.Mount("/api/v1", v1Router)
+	
 	return r
 }
