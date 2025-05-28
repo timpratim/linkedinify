@@ -11,12 +11,20 @@ import (
 	"github.com/you/linkedinify/internal/repository"
 )
 
+// LinkedInServiceInteractor defines the operations for LinkedIn related services.
+type LinkedInServiceInteractor interface {
+	Transform(ctx context.Context, userID uuid.UUID, text string) (string, error)
+	History(ctx context.Context, userID uuid.UUID) ([]model.LinkedInPost, error)
+}
+
 type LinkedInService struct {
 	ai    ai.Client
 	posts repository.PostRepository
 }
 
-func NewLinkedIn(ai ai.Client, pr repository.PostRepository) *LinkedInService {
+// NewLinkedIn creates a new LinkedInService instance.
+// It now returns the LinkedInServiceInteractor interface.
+func NewLinkedIn(ai ai.Client, pr repository.PostRepository) LinkedInServiceInteractor {
 	return &LinkedInService{ai: ai, posts: pr}
 }
 

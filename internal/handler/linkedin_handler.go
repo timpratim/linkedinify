@@ -13,10 +13,12 @@ import (
 )
 
 type LinkedInHandler struct {
-	svc *service.LinkedInService
+	svc service.LinkedInServiceInteractor
 }
 
-func NewLinkedIn(svc *service.LinkedInService) *LinkedInHandler { return &LinkedInHandler{svc} }
+func NewLinkedIn(svc service.LinkedInServiceInteractor) *LinkedInHandler {
+	return &LinkedInHandler{svc: svc}
+}
 
 func (h *LinkedInHandler) Routes(secret []byte) chi.Router {
 	r := chi.NewRouter()
