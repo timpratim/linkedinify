@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/microcosm-cc/bluemonday"
+	"strconv"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
@@ -13,10 +16,12 @@ import (
 )
 
 type LinkedInHandler struct {
-	svc *service.LinkedInService
+	svc service.LinkedInServiceInteractor
 }
 
-func NewLinkedIn(svc *service.LinkedInService) *LinkedInHandler { return &LinkedInHandler{svc} }
+func NewLinkedIn(svc service.LinkedInServiceInteractor) *LinkedInHandler {
+	return &LinkedInHandler{svc: svc}
+}
 
 func (h *LinkedInHandler) Routes(secret []byte) chi.Router {
 	r := chi.NewRouter()
@@ -33,21 +38,36 @@ type reqBody struct {
 func (h *LinkedInHandler) transform(w http.ResponseWriter, r *http.Request) {
 	var in reqBody
 	if json.NewDecoder(r.Body).Decode(&in) != nil || in.Text == "" {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		http.Error(w, "bad request: missing text", http.StatusBadRequest)
 		return
 	}
+
+	p := bluemonday.StrictPolicy()
+	sanitizedText := p.Sanitize(in.Text)
 	uid := middleware.UserID(r.Context())
-	out, err := h.svc.Transform(r.Context(), uid, in.Text)
+	out, err := h.svc.Transform(r.Context(), uid, sanitizedText)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]string{"post": out})
 }
 
 func (h *LinkedInHandler) history(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r.Context())
-	items, err := h.svc.History(r.Context(), uid)
+
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	pageSize, _ := strconv.Atoi(r.URL.Query().Get("pageSize"))
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10 // Default page size
+	}
+
+	items, err := h.svc.History(r.Context(), uid, page, pageSize)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

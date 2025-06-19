@@ -11,9 +11,13 @@ import (
 	"github.com/you/linkedinify/internal/service"
 )
 
-type AuthHandler struct{ svc *service.AuthService }
+type AuthHandler struct {
+	svc service.AuthServiceInteractor
+}
 
-func NewAuth(svc *service.AuthService) *AuthHandler { return &AuthHandler{svc} }
+func NewAuth(svc service.AuthServiceInteractor) *AuthHandler {
+	return &AuthHandler{svc: svc}
+}
 
 func (h *AuthHandler) Routes() chi.Router {
 	r := chi.NewRouter()
@@ -29,8 +33,8 @@ type creds struct {
 
 func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
 	var c creds
-	if json.NewDecoder(r.Body).Decode(&c) != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&c); err != nil || c.Email == "" || c.Password == "" {
+		http.Error(w, "bad request: missing email or password", http.StatusBadRequest)
 		return
 	}
 	token, err := h.svc.Login(r.Context(), c.Email, c.Password)
@@ -38,20 +42,23 @@ func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid credentials", http.StatusUnauthorized)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
 
 func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
 	var c creds
-	if json.NewDecoder(r.Body).Decode(&c) != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&c); err != nil || c.Email == "" || c.Password == "" {
+		http.Error(w, "bad request: missing email or password", http.StatusBadRequest)
 		return
 	}
 	token, err := h.svc.Register(r.Context(), c.Email, c.Password)
 	if err != nil {
 		log.Printf("Registration error: %v", err)
-		http.Error(w, "conflict: "+err.Error(), http.StatusConflict)
+		http.Error(w, "registration failed", http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }

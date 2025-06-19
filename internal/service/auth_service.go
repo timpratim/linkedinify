@@ -9,22 +9,37 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/you/linkedinify/internal/config"
 	"github.com/you/linkedinify/internal/model"
 	"github.com/you/linkedinify/internal/repository"
 )
 
-type AuthService struct {
-	repo repository.UserRepository
-	key  []byte
+// AuthConfigProvider provides the JWT secret for AuthService.
+type AuthConfigProvider interface {
+	GetJWTSecret() []byte
 }
 
-func NewAuth(repo repository.UserRepository, cfg config.Config) *AuthService {
-	return &AuthService{repo: repo, key: cfg.JWTSecret}
+// AuthServiceInteractor defines the operations for authentication services.
+type AuthServiceInteractor interface {
+	Register(ctx context.Context, email, password string) (string, error)
+	Login(ctx context.Context, email, password string) (string, error)
+}
+
+type AuthService struct {
+	repo repository.UserRepository
+	cfg  AuthConfigProvider // Uses the interface
+}
+
+// NewAuth creates a new AuthService instance.
+// It now accepts AuthConfigProvider and returns AuthServiceInteractor.
+func NewAuth(repo repository.UserRepository, cfg AuthConfigProvider) AuthServiceInteractor {
+	return &AuthService{repo: repo, cfg: cfg}
 }
 
 func (a *AuthService) Register(ctx context.Context, email, password string) (string, error) {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err // Handle bcrypt errors
+	}
 	user := &model.User{
 		ID:           uuid.New(),
 		Email:        email,
@@ -42,7 +57,8 @@ func (a *AuthService) Login(ctx context.Context, email, password string) (string
 	if err != nil {
 		return "", err
 	}
-	if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)) != nil {
+	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
+	if err != nil {
 		return "", jwt.ErrTokenInvalidAudience
 	}
 	return a.generateJWT(u.ID)
@@ -54,5 +70,5 @@ func (a *AuthService) generateJWT(userID uuid.UUID) (string, error) {
 		"exp": time.Now().Add(24 * time.Hour).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(a.key)
+	return token.SignedString(a.cfg.GetJWTSecret())
 }
