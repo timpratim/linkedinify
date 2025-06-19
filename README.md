@@ -1,89 +1,120 @@
 # LinkedInify API
 
-LinkedInify is an API starter kit designed to transform regular text into professional LinkedIn-style posts using AI.
+LinkedInify is a hands-on API starter kit that demonstrates how to build a modern, production-ready API in Go. It's built around a fun AI tool that transforms your everyday text into an over-the-top, professional-sounding LinkedIn post.
 
-## API Versioning
+This project is designed for developers who want a practical, real-world example of building APIs with best practices in mind.
 
-The API now uses versioning with all endpoints available under the `/api/v1/` prefix.
+## Features
 
-### Base URL
+This starter kit comes packed with features that are essential for any modern API:
+
+- **AI Integration**: Uses the OpenAI SDK to perform text transformations.
+- **Layered Architecture**: Clean separation of concerns (handler, service, repository).
+- **JWT Authentication**: Secure endpoints using JSON Web Tokens.
+- **API Observability**: Integrated with the [Treblle SDK](https://treblle.com/) for real-time monitoring and debugging.
+- **Database Integration**: Uses PostgreSQL with `sqlc` for type-safe queries.
+- **Configuration Management**: Simple configuration using environment variables.
+- **Dockerized Environment**: Includes a `docker-compose.yml` for easy, one-command setup.
+- **RESTful Best Practices**: Implements proper status codes, error handling, and routing.
+
+## Getting Started
+
+Getting the project running locally is simple, thanks to Docker.
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/get-started) and Docker Compose
+- Go (for running outside of Docker)
+
+### 1. Clone the Repository
 
 ```bash
-http://localhost:8080/api/v1
+git clone https://github.com/your-username/linkedinify.git
+cd linkedinify
 ```
 
-## Endpoints
+### 2. Configure Environment Variables
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+Now, open the `.env` file and fill in the required values:
+
+- `DATABASE_DSN`: The default value should work with the provided Docker Compose setup.
+- `JWT_SECRET`: Add a long, random string for signing JWTs.
+- `OPENAI_TOKEN`: Your secret API key from OpenAI.
+- `TREBLLE_API_KEY` & `TREBLLE_PROJECT_ID`: Your Treblle credentials. (You can get these from the [Treblle dashboard](https://app.treblle.com)).
+
+### 3. Run with Docker Compose
+
+The easiest way to get everything running (the Go API, PostgreSQL database, and the frontend) is with a single command:
+
+```bash
+docker-compose up --build
+```
+
+Your API will be running at `http://localhost:8080` and the frontend at `http://localhost:5173`.
+
+## API Observability with Treblle
+
+This project uses Treblle to automatically provide real-time observability into your API. Once you run the application and make a few API calls, you can visit your project on the [Treblle dashboard](https://app.treblle.com) to see:
+
+- Every request and response, with sensitive data automatically masked.
+- API performance metrics and error tracking.
+- Auto-generated, always-up-to-date API documentation.
+
+This is a powerful feature for debugging, monitoring, and understanding your API without writing any extra code.
+
+## API Endpoints
+
+All endpoints are prefixed with `/api/v1`.
 
 ### Authentication
 
-- **Register a new user**
-  - `POST /api/v1/auth/register`
-  - Request body: `{ "email": "user@example.com", "password": "password" }`
-  - Response: `{ "token": "jwt-token" }`
+- **Register**: `POST /auth/register`
+- **Login**: `POST /auth/login`
 
-- **Login**
-  - `POST /api/v1/auth/login`
-  - Request body: `{ "email": "user@example.com", "password": "password" }`
-  - Response: `{ "token": "jwt-token" }`
+### LinkedInify (Requires Authentication)
 
-### LinkedInify
+- **Transform Text**: `POST /posts`
+- **Get History**: `GET /posts`
 
-All LinkedInify endpoints require authentication via JWT token in the Authorization header.
+*For detailed request/response examples, see the `curl` commands below or check your Treblle dashboard for live documentation.*
 
-- **Transform text to LinkedIn style**
-  - `POST /api/v1/linkedinify`
-  - Headers: `Authorization: Bearer your-jwt-token`
-  - Request body: `{ "text": "Your text to transform" }`
-  - Response: `{ "post": "Transformed LinkedIn-style text" }`
+## Frontend
 
-- **View transformation history**
-  - `GET /api/v1/linkedinify`
-  - Headers: `Authorization: Bearer your-jwt-token`
-  - Response: Array of transformation items
+The project includes a simple Vite-based frontend in the `/frontend` directory. If you run `docker-compose up`, it is automatically served on `http://localhost:5173`.
 
-## Environment Variables
-
-The application requires the following environment variables:
-
-- `DATABASE_DSN` - PostgreSQL connection string (default: "postgres://pratimbhosale@localhost:5432/linkedinify?sslmode=disable")
-- `JWT_SECRET` - Secret for JWT token generation
-- `OPENAI_TOKEN` - OpenAI API token for text transformation
-- `TREBLLE_SDK_TOKEN` and `TREBLLE_API_KEY` - For API monitoring (optional)
-
-## Running the Application
-
-The backend runs on port 8080 by default.
+To run it manually:
 
 ```bash
-go run cmd/api/main.go
+cd frontend
+npm install
+npm run dev
 ```
 
 ## Testing with curl
 
-### Register a new user
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"password123"}'
-```
+First, register and log in to get a token.
 
-### Login
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"password123"}'
-```
+# Register (only needs to be done once)
+curl -X POST http://localhost:8080/api/v1/auth/register -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"password123"}'
 
-### Transform text (replace YOUR_TOKEN with the token from login/register)
-```bash
-curl -X POST http://localhost:8080/api/v1/linkedinify \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"text":"Here is my regular text that I want to transform into a LinkedIn post."}'
-```
+# Login to get a token
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"password123"}' | jq -r .token)
 
-### Get history (replace YOUR_TOKEN with the token from login/register)
-```bash
-curl -X GET http://localhost:8080/api/v1/linkedinify \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
+echo "Got token: $TOKEN"
+
+# Transform Text
+curl -X POST http://localhost:8080/api/v1/posts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"text":"I built a cool API."}'
+
+# Get Transformation History
+curl -X GET http://localhost:8080/api/v1/posts \
+  -H "Authorization: Bearer $TOKEN"

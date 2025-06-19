@@ -3,10 +3,12 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
-	"github.com/microcosm-cc/bluemonday"
 	"strconv"
+
+	"github.com/microcosm-cc/bluemonday"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -37,8 +39,12 @@ type reqBody struct {
 
 func (h *LinkedInHandler) transform(w http.ResponseWriter, r *http.Request) {
 	var in reqBody
-	if json.NewDecoder(r.Body).Decode(&in) != nil || in.Text == "" {
-		http.Error(w, "bad request: missing text", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	if in.Text == "" {
+		respondError(w, http.StatusBadRequest, "The 'text' field is required")
 		return
 	}
 
@@ -47,11 +53,10 @@ func (h *LinkedInHandler) transform(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r.Context())
 	out, err := h.svc.Transform(r.Context(), uid, sanitizedText)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		respondError(w, http.StatusInternalServerError, "Failed to transform text")
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(map[string]string{"post": out})
+	respondJSON(w, http.StatusCreated, map[string]string{"post": out})
 }
 
 func (h *LinkedInHandler) history(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +74,7 @@ func (h *LinkedInHandler) history(w http.ResponseWriter, r *http.Request) {
 
 	items, err := h.svc.History(r.Context(), uid, page, pageSize)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		respondError(w, http.StatusInternalServerError, "Failed to retrieve history")
 		return
 	}
 	type item struct {
@@ -81,5 +86,31 @@ func (h *LinkedInHandler) history(w http.ResponseWriter, r *http.Request) {
 	for _, p := range items {
 		res = append(res, item{ID: p.ID, Input: p.InputText, Post: p.OutputText})
 	}
-	_ = json.NewEncoder(w).Encode(res)
+	respondJSON(w, http.StatusOK, res)
+}
+
+// --- Response Helpers ---
+
+// respondJSON writes a JSON response with a given status code and payload.
+func respondJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	response, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("ERROR: Failed to marshal JSON response: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		// We'll try to write an error response, but this might also fail
+		if _, writeErr := w.Write([]byte(`{"error":"Internal server error"}`)); writeErr != nil {
+			log.Printf("ERROR: Could not write error response: %v", writeErr)
+		}
+		return
+	}
+	w.WriteHeader(status)
+	if _, err := w.Write(response); err != nil {
+		log.Printf("ERROR: Failed to write JSON response: %v", err)
+	}
+}
+
+// respondError sends a structured JSON error response.
+func respondError(w http.ResponseWriter, code int, message string) {
+	respondJSON(w, code, map[string]string{"error": message})
 }
