@@ -45,8 +45,16 @@ func TestLinkedInService_Transform_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "ai transformed text", transformedText)
 
-	assert.Len(t, mockAIClient.TransformCalls(), 1, "Expected AIClient.Transform to be called once")
-	assert.Len(t, mockPostRepo.SaveCalls(), 1, "Expected PostRepository.Save to be called once")
+	assert.Len(t, mockAIClient.TransformCalls(), 1, "Expected AIClient.Transform to be called once on first call (cache miss)")
+	assert.Len(t, mockPostRepo.SaveCalls(), 1, "Expected PostRepository.Save to be called once on first call")
+
+	// Second call with the same input - should be a cache hit
+	transformedTextCached, errCached := liSvc.Transform(context.Background(), userID, inputText)
+	require.NoError(t, errCached)
+	assert.Equal(t, "ai transformed text", transformedTextCached)
+
+	assert.Len(t, mockAIClient.TransformCalls(), 1, "Expected AIClient.Transform to still be called only once (cache hit)")
+	assert.Len(t, mockPostRepo.SaveCalls(), 2, "Expected PostRepository.Save to be called twice (once for cache miss, once for cache hit)")
 }
 
 func TestLinkedInService_Transform_AIClientError(t *testing.T) {

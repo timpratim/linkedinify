@@ -12,7 +12,7 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => `/api/v1${path}`,
       },
-      '/linkedinify': {
+      '/posts': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,

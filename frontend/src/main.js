@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Call the API to translate the text
             const token = getToken();
-            const response = await fetch('/linkedinify', {
+            const response = await fetch('/posts', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
