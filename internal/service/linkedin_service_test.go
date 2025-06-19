@@ -101,9 +101,10 @@ func TestLinkedInService_History_Success(t *testing.T) {
 	}
 
 	mockPostRepo := &repository.PostRepositoryMock{
-		ListByUserFunc: func(ctx context.Context, userID uuid.UUID, limit int) ([]model.LinkedInPost, error) {
+		ListByUserFunc: func(ctx context.Context, userID uuid.UUID, page, pageSize int) ([]model.LinkedInPost, error) {
 			assert.Equal(t, testUserID, userID)
-			assert.Equal(t, 20, limit)
+			assert.Equal(t, 1, page)
+			assert.Equal(t, 10, pageSize)
 			return expectedPosts, nil
 		},
 	}
@@ -111,7 +112,7 @@ func TestLinkedInService_History_Success(t *testing.T) {
 
 	liSvc := service.NewLinkedIn(mockAIClient, mockPostRepo)
 
-	posts, err := liSvc.History(context.Background(), testUserID)
+	posts, err := liSvc.History(context.Background(), testUserID, 1, 10)
 	require.NoError(t, err)
 	assert.Equal(t, expectedPosts, posts)
 	assert.Len(t, mockPostRepo.ListByUserCalls(), 1)
@@ -122,7 +123,7 @@ func TestLinkedInService_History_RepositoryError(t *testing.T) {
 	testUserID, _ := uuid.Parse("history-user-id-err")
 
 	mockPostRepo := &repository.PostRepositoryMock{
-		ListByUserFunc: func(ctx context.Context, userID uuid.UUID, limit int) ([]model.LinkedInPost, error) {
+		ListByUserFunc: func(ctx context.Context, userID uuid.UUID, page, pageSize int) ([]model.LinkedInPost, error) {
 			return nil, repoListError
 		},
 	}
@@ -130,7 +131,7 @@ func TestLinkedInService_History_RepositoryError(t *testing.T) {
 
 	liSvc := service.NewLinkedIn(mockAIClient, mockPostRepo)
 
-	_, err := liSvc.History(context.Background(), testUserID)
+	_, err := liSvc.History(context.Background(), testUserID, 1, 10)
 	require.Error(t, err)
 	assert.Equal(t, repoListError, err)
 	assert.Len(t, mockPostRepo.ListByUserCalls(), 1)

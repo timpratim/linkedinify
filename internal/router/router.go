@@ -27,6 +27,7 @@ func New(cfg config.Config) *chi.Mux {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(middleware.Compress(5, "gzip"))
 	
 	// Create API v1 router
 	v1Router := chi.NewRouter()

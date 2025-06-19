@@ -6,15 +6,17 @@ export default defineConfig({
     host: '0.0.0.0', // Allow connections from outside the container
     proxy: {
       // Proxy API requests to the Go backend
-      '/linkedinify': {
-        target: 'http://app:8080',
-        changeOrigin: true,
-        secure: false,
-      },
       '/auth': {
-        target: 'http://app:8080',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => `/api/v1${path}`,
+      },
+      '/linkedinify': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => `/api/v1${path}`,
       }
     }
   },

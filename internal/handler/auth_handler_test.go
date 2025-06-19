@@ -66,7 +66,8 @@ func TestAuthHandler_Login_InvalidCredentials(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodPost, server.URL+"/login", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, _ := server.Client().Do(req)
+	resp, err := server.Client().Do(req)
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
@@ -96,7 +97,8 @@ func TestAuthHandler_Login_BadRequest_MissingFields(t *testing.T) {
 			req, _ := http.NewRequest(http.MethodPost, server.URL+"/login", bytes.NewBuffer(jsonBody))
 			req.Header.Set("Content-Type", "application/json")
 
-			resp, _ := server.Client().Do(req)
+			resp, err := server.Client().Do(req)
+			require.NoError(t, err)
 			defer resp.Body.Close()
 			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		})
@@ -151,7 +153,8 @@ func TestAuthHandler_Register_Conflict(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodPost, server.URL+"/register", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, _ := server.Client().Do(req)
+	resp, err := server.Client().Do(req)
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)

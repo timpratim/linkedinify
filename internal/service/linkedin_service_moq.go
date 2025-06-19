@@ -20,7 +20,7 @@ var _ LinkedInServiceInteractor = &LinkedInServiceInteractorMock{}
 //
 //		// make and configure a mocked LinkedInServiceInteractor
 //		mockedLinkedInServiceInteractor := &LinkedInServiceInteractorMock{
-//			HistoryFunc: func(ctx context.Context, userID uuid.UUID) ([]model.LinkedInPost, error) {
+//			HistoryFunc: func(ctx context.Context, userID uuid.UUID, page int, pageSize int) ([]model.LinkedInPost, error) {
 //				panic("mock out the History method")
 //			},
 //			TransformFunc: func(ctx context.Context, userID uuid.UUID, text string) (string, error) {
@@ -34,7 +34,7 @@ var _ LinkedInServiceInteractor = &LinkedInServiceInteractorMock{}
 //	}
 type LinkedInServiceInteractorMock struct {
 	// HistoryFunc mocks the History method.
-	HistoryFunc func(ctx context.Context, userID uuid.UUID) ([]model.LinkedInPost, error)
+	HistoryFunc func(ctx context.Context, userID uuid.UUID, page int, pageSize int) ([]model.LinkedInPost, error)
 
 	// TransformFunc mocks the Transform method.
 	TransformFunc func(ctx context.Context, userID uuid.UUID, text string) (string, error)
@@ -47,6 +47,10 @@ type LinkedInServiceInteractorMock struct {
 			Ctx context.Context
 			// UserID is the userID argument value.
 			UserID uuid.UUID
+			// Page is the page argument value.
+			Page int
+			// PageSize is the pageSize argument value.
+			PageSize int
 		}
 		// Transform holds details about calls to the Transform method.
 		Transform []struct {
@@ -63,21 +67,25 @@ type LinkedInServiceInteractorMock struct {
 }
 
 // History calls HistoryFunc.
-func (mock *LinkedInServiceInteractorMock) History(ctx context.Context, userID uuid.UUID) ([]model.LinkedInPost, error) {
+func (mock *LinkedInServiceInteractorMock) History(ctx context.Context, userID uuid.UUID, page int, pageSize int) ([]model.LinkedInPost, error) {
 	if mock.HistoryFunc == nil {
 		panic("LinkedInServiceInteractorMock.HistoryFunc: method is nil but LinkedInServiceInteractor.History was just called")
 	}
 	callInfo := struct {
-		Ctx    context.Context
-		UserID uuid.UUID
+		Ctx      context.Context
+		UserID   uuid.UUID
+		Page     int
+		PageSize int
 	}{
-		Ctx:    ctx,
-		UserID: userID,
+		Ctx:      ctx,
+		UserID:   userID,
+		Page:     page,
+		PageSize: pageSize,
 	}
 	mock.lockHistory.Lock()
 	mock.calls.History = append(mock.calls.History, callInfo)
 	mock.lockHistory.Unlock()
-	return mock.HistoryFunc(ctx, userID)
+	return mock.HistoryFunc(ctx, userID, page, pageSize)
 }
 
 // HistoryCalls gets all the calls that were made to History.
@@ -85,12 +93,16 @@ func (mock *LinkedInServiceInteractorMock) History(ctx context.Context, userID u
 //
 //	len(mockedLinkedInServiceInteractor.HistoryCalls())
 func (mock *LinkedInServiceInteractorMock) HistoryCalls() []struct {
-	Ctx    context.Context
-	UserID uuid.UUID
+	Ctx      context.Context
+	UserID   uuid.UUID
+	Page     int
+	PageSize int
 } {
 	var calls []struct {
-		Ctx    context.Context
-		UserID uuid.UUID
+		Ctx      context.Context
+		UserID   uuid.UUID
+		Page     int
+		PageSize int
 	}
 	mock.lockHistory.RLock()
 	calls = mock.calls.History

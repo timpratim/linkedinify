@@ -20,7 +20,7 @@ var _ PostRepository = &PostRepositoryMock{}
 //
 //		// make and configure a mocked PostRepository
 //		mockedPostRepository := &PostRepositoryMock{
-//			ListByUserFunc: func(ctx context.Context, userID uuid.UUID, limit int) ([]model.LinkedInPost, error) {
+//			ListByUserFunc: func(ctx context.Context, userID uuid.UUID, page int, pageSize int) ([]model.LinkedInPost, error) {
 //				panic("mock out the ListByUser method")
 //			},
 //			SaveFunc: func(ctx context.Context, p *model.LinkedInPost) error {
@@ -34,7 +34,7 @@ var _ PostRepository = &PostRepositoryMock{}
 //	}
 type PostRepositoryMock struct {
 	// ListByUserFunc mocks the ListByUser method.
-	ListByUserFunc func(ctx context.Context, userID uuid.UUID, limit int) ([]model.LinkedInPost, error)
+	ListByUserFunc func(ctx context.Context, userID uuid.UUID, page int, pageSize int) ([]model.LinkedInPost, error)
 
 	// SaveFunc mocks the Save method.
 	SaveFunc func(ctx context.Context, p *model.LinkedInPost) error
@@ -47,8 +47,10 @@ type PostRepositoryMock struct {
 			Ctx context.Context
 			// UserID is the userID argument value.
 			UserID uuid.UUID
-			// Limit is the limit argument value.
-			Limit int
+			// Page is the page argument value.
+			Page int
+			// PageSize is the pageSize argument value.
+			PageSize int
 		}
 		// Save holds details about calls to the Save method.
 		Save []struct {
@@ -63,23 +65,25 @@ type PostRepositoryMock struct {
 }
 
 // ListByUser calls ListByUserFunc.
-func (mock *PostRepositoryMock) ListByUser(ctx context.Context, userID uuid.UUID, limit int) ([]model.LinkedInPost, error) {
+func (mock *PostRepositoryMock) ListByUser(ctx context.Context, userID uuid.UUID, page int, pageSize int) ([]model.LinkedInPost, error) {
 	if mock.ListByUserFunc == nil {
 		panic("PostRepositoryMock.ListByUserFunc: method is nil but PostRepository.ListByUser was just called")
 	}
 	callInfo := struct {
-		Ctx    context.Context
-		UserID uuid.UUID
-		Limit  int
+		Ctx      context.Context
+		UserID   uuid.UUID
+		Page     int
+		PageSize int
 	}{
-		Ctx:    ctx,
-		UserID: userID,
-		Limit:  limit,
+		Ctx:      ctx,
+		UserID:   userID,
+		Page:     page,
+		PageSize: pageSize,
 	}
 	mock.lockListByUser.Lock()
 	mock.calls.ListByUser = append(mock.calls.ListByUser, callInfo)
 	mock.lockListByUser.Unlock()
-	return mock.ListByUserFunc(ctx, userID, limit)
+	return mock.ListByUserFunc(ctx, userID, page, pageSize)
 }
 
 // ListByUserCalls gets all the calls that were made to ListByUser.
@@ -87,14 +91,16 @@ func (mock *PostRepositoryMock) ListByUser(ctx context.Context, userID uuid.UUID
 //
 //	len(mockedPostRepository.ListByUserCalls())
 func (mock *PostRepositoryMock) ListByUserCalls() []struct {
-	Ctx    context.Context
-	UserID uuid.UUID
-	Limit  int
+	Ctx      context.Context
+	UserID   uuid.UUID
+	Page     int
+	PageSize int
 } {
 	var calls []struct {
-		Ctx    context.Context
-		UserID uuid.UUID
-		Limit  int
+		Ctx      context.Context
+		UserID   uuid.UUID
+		Page     int
+		PageSize int
 	}
 	mock.lockListByUser.RLock()
 	calls = mock.calls.ListByUser

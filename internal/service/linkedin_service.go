@@ -14,7 +14,7 @@ import (
 // LinkedInServiceInteractor defines the operations for LinkedIn related services.
 type LinkedInServiceInteractor interface {
 	Transform(ctx context.Context, userID uuid.UUID, text string) (string, error)
-	History(ctx context.Context, userID uuid.UUID) ([]model.LinkedInPost, error)
+	History(ctx context.Context, userID uuid.UUID, page, pageSize int) ([]model.LinkedInPost, error)
 }
 
 type LinkedInService struct {
@@ -45,6 +45,6 @@ func (l *LinkedInService) Transform(ctx context.Context, userID uuid.UUID, text 
 	return out, nil
 }
 
-func (l *LinkedInService) History(ctx context.Context, userID uuid.UUID) ([]model.LinkedInPost, error) {
-	return l.posts.ListByUser(ctx, userID, 20)
+func (l *LinkedInService) History(ctx context.Context, userID uuid.UUID, page, pageSize int) ([]model.LinkedInPost, error) {
+	return l.posts.ListByUser(ctx, userID, page, pageSize)
 }

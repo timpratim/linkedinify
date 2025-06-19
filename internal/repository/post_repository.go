@@ -12,7 +12,7 @@ import (
 
 type PostRepository interface {
 	Save(ctx context.Context, p *model.LinkedInPost) error
-	ListByUser(ctx context.Context, userID uuid.UUID, limit int) ([]model.LinkedInPost, error)
+	ListByUser(ctx context.Context, userID uuid.UUID, page, pageSize int) ([]model.LinkedInPost, error)
 }
 
 type postRepo struct{ db *bun.DB }
@@ -24,13 +24,15 @@ func (p *postRepo) Save(ctx context.Context, post *model.LinkedInPost) error {
 	return err
 }
 
-func (p *postRepo) ListByUser(ctx context.Context, userID uuid.UUID, limit int) ([]model.LinkedInPost, error) {
+func (p *postRepo) ListByUser(ctx context.Context, userID uuid.UUID, page, pageSize int) ([]model.LinkedInPost, error) {
 	var posts []model.LinkedInPost
+	offset := (page - 1) * pageSize
 	err := p.db.NewSelect().
 		Model(&posts).
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
-		Limit(limit).
+		Limit(pageSize).
+		Offset(offset).
 		Scan(ctx)
 	return posts, err
 }
