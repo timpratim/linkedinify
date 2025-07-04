@@ -29,7 +29,7 @@ func (h *LinkedInHandler) Routes(secret []byte) chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.Auth(secret))
 	r.Post("/", h.transform)
-	r.Get("/", h.history)
+	r.Get("/history", h.history)
 	return r
 }
 

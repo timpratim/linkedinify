@@ -122,7 +122,7 @@ func TestLinkedInHandler_History_Success(t *testing.T) {
 	defer server.Close()
 
 	authToken := generateTestToken(t, testUserID, testSecret)
-	req, err := http.NewRequest(http.MethodGet, server.URL+"/?page=1&pageSize=5", nil)
+	req, err := http.NewRequest(http.MethodGet, server.URL+"/history?page=1&pageSize=5", nil)
 	require.NoError(t, err)
 	req.Header.Set("Authorization", "Bearer "+authToken)
 
@@ -157,7 +157,7 @@ func TestLinkedInHandler_History_ServiceError(t *testing.T) {
 	defer server.Close()
 
 	authToken := generateTestToken(t, testUserID, testSecret)
-	req, err := http.NewRequest(http.MethodGet, server.URL+"/", nil)
+	req, err := http.NewRequest(http.MethodGet, server.URL+"/history", nil)
 	require.NoError(t, err)
 	req.Header.Set("Authorization", "Bearer "+authToken)
 
